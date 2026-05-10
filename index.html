@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Northgate HQ — Phase 0 Setup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #0E0E0E;
+      color: #E8E6E0;
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+      line-height: 1.5;
+    }
+
+    .wrap { max-width: 660px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .hdr { margin-bottom: 2rem; }
+    .hdr-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+    .hdr-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: #F0EEE8; }
+    .hdr-save { font-family: 'DM Mono', monospace; font-size: 11px; color: #383838; transition: color .3s; }
+    .hdr-save.ok  { color: #3ECF8E; }
+    .hdr-save.err { color: #ef4444; }
+    .hdr-desc { font-size: 13px; color: #666; margin-bottom: 14px; }
+
+    .prog-row { display: flex; align-items: center; gap: 12px; }
+    .prog-track { flex: 1; height: 5px; background: #1E1E1E; border-radius: 3px; overflow: hidden; }
+    .prog-fill  { height: 100%; width: 0; background: #3ECF8E; border-radius: 3px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+    .prog-lbl   { font-family: 'DM Mono', monospace; font-size: 12px; color: #555; min-width: 60px; text-align: right; }
+
+    /* ── Track card ── */
+    .track { margin-bottom: .875rem; border: 1px solid #1E1E1E; border-radius: 12px; overflow: hidden; transition: border-color .3s; }
+    .track-hdr { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #161616; border-bottom: 1px solid #1E1E1E; transition: background .3s; }
+    .track-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: -.01em; color: #E8E6E0; transition: color .3s; }
+    .track-sub  { font-size: 11px; color: #555; margin-top: 1px; }
+    .track-pill { font-family: 'DM Mono', monospace; font-size: 11px; background: #1E1E1E; color: #555; border: 1px solid #2A2A2A; padding: 3px 10px; border-radius: 20px; transition: all .3s; white-space: nowrap; }
+
+    /* ── Task row ── */
+    .task { border-top: 1px solid #1A1A1A; transition: background .2s; }
+    .task:first-of-type { border-top: none; }
+    .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; }
+
+    .chk { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; border: 1.5px solid #333; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .chk-mark { font-size: 11px; color: #000; display: none; }
+
+    .task-lbl { flex: 1; font-size: 13px; font-weight: 500; color: #C8C6C0; line-height: 1.4; transition: color .2s; }
+    .task-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .inp-pill { font-family: 'DM Mono', monospace; font-size: 10px; background: #1E1E1E; color: #555; border: 1px solid #2A2A2A; padding: 2px 8px; border-radius: 20px; transition: all .2s; }
+    .chev { font-size: 10px; color: #444; transition: transform .15s; }
+
+    /* ── Task body ── */
+    .task-body { display: none; padding: 4px 16px 16px; border-top: 1px solid #1A1A1A; }
+
+    .steps-lbl { font-family: 'DM Mono', monospace; font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: .08em; margin: 12px 0 7px; }
+    .steps-ol  { padding-left: 18px; }
+    .steps-ol li { font-size: 13px; color: #888; padding: 2px 0; line-height: 1.6; }
+
+    .field-wrap { margin-top: 12px; }
+    .field-lbl  { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-family: 'DM Mono', monospace; font-size: 11px; color: #666; }
+    .sens-tag   { font-size: 10px; background: #2a1a00; color: #f59e0b; border: 1px solid #5a3800; padding: 1px 7px; border-radius: 4px; }
+    .field-row  { display: flex; gap: 6px; }
+    .field-inp  { flex: 1; padding: 8px 11px; font-size: 12px; font-family: 'DM Mono', monospace; background: #111; color: #C8C6C0; border: 1px solid #2A2A2A; border-radius: 7px; outline: none; min-width: 0; transition: border-color .15s; }
+    .field-inp:focus { border-color: #3ECF8E55; }
+    .field-tog  { padding: 8px 12px; font-size: 11px; background: #161616; color: #666; border: 1px solid #2A2A2A; border-radius: 7px; cursor: pointer; font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+    /* ── Notes ── */
+    .notes-card { margin-bottom: .875rem; border: 1px solid #1E1E1E; border-radius: 12px; overflow: hidden; }
+    .notes-hdr  { background: #161616; padding: 12px 16px; border-bottom: 1px solid #1E1E1E; }
+    .notes-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: #E8E6E0; }
+    .notes-sub  { font-size: 11px; color: #555; margin-top: 1px; }
+    .notes-body { padding: 14px; background: #0E0E0E; }
+    .notes-ta   { width: 100%; min-height: 90px; padding: 9px 11px; font-size: 13px; background: #111; color: #C8C6C0; border: 1px solid #2A2A2A; border-radius: 7px; font-family: 'DM Sans', sans-serif; resize: vertical; outline: none; line-height: 1.5; }
+    .notes-ta:focus { border-color: #3ECF8E44; }
+
+    /* ── Generate button ── */
+    .gen-btn { width: 100%; padding: 14px; background: #1A1A1A; color: #C8C6C0; border: 1px solid #2A2A2A; border-radius: 10px; font-size: 14px; font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: -.01em; cursor: pointer; margin-bottom: 1rem; transition: all .3s; }
+
+    /* ── Output ── */
+    .out-card { border: 1px solid #1E1E1E; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; display: none; }
+    .out-hdr  { background: #161616; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1E1E1E; }
+    .out-ttl  { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+    .out-acts { display: flex; gap: 7px; }
+    .btn-cp   { padding: 5px 13px; font-size: 11px; background: #1E1E1E; color: #888; border: 1px solid #2A2A2A; border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace; transition: all .2s; }
+    .btn-dl   { padding: 5px 13px; font-size: 11px; background: #3ECF8E; color: #000; border: none; border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace; font-weight: 500; }
+    .out-pre  { margin: 0; padding: 16px; font-size: 11px; background: #0A0A0A; color: #888; white-space: pre-wrap; font-family: 'DM Mono', monospace; max-height: 300px; overflow-y: auto; line-height: 1.6; }
+    .out-foot { padding: 10px 16px; background: #0E0E0E; border-top: 1px solid #1E1E1E; font-size: 12px; color: #555; }
+
+    .foot { font-family: 'DM Mono', monospace; font-size: 10px; color: #2A2A2A; text-align: center; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-row">
+      <h1 class="hdr-title">Phase 0 — Setup Checklist</h1>
+      <span class="hdr-save" id="save-lbl">auto-saves</span>
+    </div>
+    <p class="hdr-desc">Check off each step as you go. Enter credentials where prompted. When all tracks are complete, hit Generate to produce your Phase 1 handoff file.</p>
+    <div class="prog-row">
+      <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+      <span class="prog-lbl" id="prog-lbl">0 / 14</span>
+    </div>
+  </div>
+
+  <!-- Tracks injected here -->
+  <div id="tracks"></div>
+
+  <!-- Notes -->
+  <div class="notes-card">
+    <div class="notes-hdr">
+      <div class="notes-name">Notes for Phase 1</div>
+      <div class="notes-sub">Issues, questions, or anything to flag before the next session</div>
+    </div>
+    <div class="notes-body">
+      <textarea class="notes-ta" id="notes" placeholder="e.g. Skipped Auth0 Action — will revisit. GitHub repo is under personal account, not org."></textarea>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <button class="gen-btn" id="gen-btn" onclick="generate()">Generate Phase 1 Handoff Document</button>
+
+  <!-- Output -->
+  <div class="out-card" id="out-card">
+    <div class="out-hdr">
+      <span class="out-ttl">Phase 1 Handoff Document</span>
+      <div class="out-acts">
+        <button class="btn-cp" id="btn-cp" onclick="doCopy()">copy</button>
+        <button class="btn-dl" onclick="doDownload()">download .txt</button>
+      </div>
+    </div>
+    <pre class="out-pre" id="out-pre"></pre>
+    <div class="out-foot">Download → start a new Claude session → upload the file → say "Phase 1, let's go."</div>
+  </div>
+
+  <p class="foot">NORTHGATE HQ &nbsp;·&nbsp; ROBERTSON-NOEL LLC &nbsp;·&nbsp; PHASE 0 &nbsp;·&nbsp; SAVES TO BROWSER STORAGE</p>
+</div>
+
+<script>
+/* ── Data ─────────────────────────────────────────────────── */
+const TRACKS = [
+  {
+    id:'supabase', label:'Supabase', sub:'New account required',
+    accent:'#3ECF8E', dark:'#083d22',
+    tasks:[
+      { id:'sb_1', label:'Create your Supabase account', inputs:[],
+        steps:['Go to supabase.com','Click "Start your project"','Sign up with GitHub — this links both accounts automatically','Verify your email if prompted'] },
+      { id:'sb_2', label:'Create project: northgate-hq', inputs:[],
+        steps:['Click "New Project"','Name: northgate-hq','Database password: click Generate — save it immediately, it cannot be recovered','Region: US East (N. Virginia)','Click "Create new project" and wait ~2 minutes'] },
+      { id:'sb_3', label:'Run the database schema SQL', inputs:[],
+        steps:['Go to SQL Editor (left sidebar) → New Query','Open northgate_hq_schema.sql from your earlier Claude session files','Select all → paste into the editor','Click Run (Ctrl / Cmd + Enter)','Confirm result reads: Success. No rows returned.','Go to Table Editor and verify all tables are visible in the list'] },
+      { id:'sb_4', label:'Save API credentials', inputs:[
+          { id:'sb_url',  label:'Project URL',       ph:'https://xxxx.supabase.co',     sens:false },
+          { id:'sb_anon', label:'Anon / Public Key', ph:'eyJhbGciOiJIUzI1NiIs...',      sens:true  },
+          { id:'sb_srvc', label:'Service Role Key',  ph:'eyJhbGciOiJIUzI1NiIs...',      sens:true  },
+        ],
+        steps:['Go to Settings → API in the left sidebar','Copy the three values below and paste them into the fields','WARNING: Never put the Service Role Key in client-side code — it bypasses all security'] },
+      { id:'sb_5', label:'Create Storage bucket', inputs:[],
+        steps:['Go to Storage (left sidebar)','Click New bucket','Name: northgate-files','Toggle "Public bucket": OFF','Click Save'] },
+    ]
+  },
+  {
+    id:'auth0', label:'Auth0', sub:'New account required',
+    accent:'#EB5424', dark:'#4a1a0a',
+    tasks:[
+      { id:'a0_1', label:'Create your Auth0 account', inputs:[],
+        steps:['Go to auth0.com → Sign up','Use a personal email — do NOT use your @thenorthgategroup.com address here','When asked "What kind of app?" → Single Page Web App → React','Tenant name: northgategroup','Region: US'] },
+      { id:'a0_2', label:'Create application: Northgate HQ', inputs:[
+          { id:'a0_domain', label:'Auth0 Domain', ph:'northgategroup.us.auth0.com', sens:false },
+          { id:'a0_cid',    label:'Client ID',    ph:'xxxxxxxxxxxxxxxxxxxxxxxx',    sens:false },
+        ],
+        steps:['Go to Applications → Applications','Click Create Application','Name: Northgate HQ','Type: Single Page Application','Click Create','Copy the Domain and Client ID into the fields below'] },
+      { id:'a0_3', label:'Configure allowed URLs (placeholder)', inputs:[],
+        steps:['In the application settings, scroll to Application URIs','Allowed Callback URLs: http://localhost:5173','Allowed Logout URLs: http://localhost:5173','Allowed Web Origins: http://localhost:5173','Click Save Changes','These will be updated with your live Netlify URL in Phase 1'] },
+      { id:'a0_4', label:'Deploy domain restriction Action', inputs:[],
+        steps:['Go to Actions → Library → Build Custom','Name: Domain Restriction and Developer Bypass','Trigger: Login / Post Login → click Create','Paste the Action code from northgate_hq_phase0_setup.md','Click Deploy','Go to Actions → Flows → Login','Drag the action between Start and Complete → click Apply'] },
+      { id:'a0_5', label:'Test the domain restriction', inputs:[],
+        steps:['Try logging in with any non-@thenorthgategroup.com email — should be denied','Try logging in with CRNCMK@gmail.com — should succeed (developer bypass)','Check this task only when both tests pass correctly'] },
+    ]
+  },
+  {
+    id:'github', label:'GitHub', sub:'Account exists — create repo',
+    accent:'#8b949e', dark:'#1c2128',
+    tasks:[
+      { id:'gh_1', label:'Create repo: northgate-hq', inputs:[
+          { id:'gh_url', label:'Repository URL', ph:'https://github.com/username/northgate-hq', sens:false },
+        ],
+        steps:['Go to github.com → click the + → New repository','Name: northgate-hq','Description: Northgate Group HQ — Internal Operations Platform','Visibility: Private','Check "Add a README file" | .gitignore template: Node','Click Create repository','Copy the repo URL into the field below'] },
+      { id:'gh_2', label:'Enable branch protection on main', inputs:[],
+        steps:['In the repo → Settings → Branches','Click Add rule (or Add branch ruleset)','Branch name pattern: main','Check: Require a pull request before merging','Click Create — this protects main from accidental direct pushes'] },
+    ]
+  },
+  {
+    id:'netlify', label:'Netlify', sub:'Account exists — connect to GitHub',
+    accent:'#00AD9F', dark:'#002d2b',
+    tasks:[
+      { id:'nl_1', label:'Connect GitHub repo to Netlify', inputs:[],
+        steps:['Log into netlify.com','Click Add new site → Import an existing project','Click Deploy with GitHub','Authorize Netlify to access your GitHub if prompted','Find and select northgate-hq'] },
+      { id:'nl_2', label:'Configure build settings and save your URL', inputs:[
+          { id:'nl_url', label:'Netlify Site URL', ph:'https://northgate-hq.netlify.app', sens:false },
+        ],
+        steps:['Branch to deploy: main','Base directory: leave empty','Build command: npm run build','Publish directory: dist','Click Deploy site','NOTE: The first deploy WILL fail — that is expected. The Vite app does not exist yet.','Copy the assigned Netlify URL (e.g. northgate-hq.netlify.app) into the field below'] },
+    ]
+  },
+];
+
+const ALL_TASKS = TRACKS.flatMap(t => t.tasks);
+const TOTAL     = ALL_TASKS.length;
+const SK        = 'ngg-phase0-v1';
+
+/* ── State ─────────────────────────────────────────────────── */
+let S = { checks:{}, inputs:{}, open:{}, vis:{} };
+let saveTimer = null;
+let summaryText = '';
+
+function load() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (raw) { const d = JSON.parse(raw); S.checks = d.checks||{}; S.inputs = d.inputs||{}; }
+  } catch {}
+}
+
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(SK, JSON.stringify({ checks: S.checks, inputs: S.inputs }));
+      flash('Saved ✓', 'ok');
+    } catch { flash('Save error', 'err'); }
+  }, 700);
+}
+
+function flash(msg, cls) {
+  const el = document.getElementById('save-lbl');
+  el.textContent = msg; el.className = 'hdr-save ' + cls;
+  setTimeout(() => { el.textContent = 'auto-saves'; el.className = 'hdr-save'; }, 2000);
+}
+
+/* ── Progress ───────────────────────────────────────────────── */
+function updateProg() {
+  const done = ALL_TASKS.filter(t => S.checks[t.id]).length;
+  const pct  = Math.round(done / TOTAL * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-lbl').textContent  = done + ' / ' + TOTAL;
+  const btn = document.getElementById('gen-btn');
+  btn.style.background    = pct === 100 ? '#3ECF8E' : '#1A1A1A';
+  btn.style.color         = pct === 100 ? '#000'    : '#C8C6C0';
+  btn.style.borderColor   = pct === 100 ? '#3ECF8E' : '#2A2A2A';
+  btn.textContent = pct === 100
+    ? '✓  Generate Phase 1 Handoff Document'
+    : 'Generate Handoff Document  (' + pct + '% complete)';
+}
+
+/* ── Render ─────────────────────────────────────────────────── */
+function render() {
+  const wrap = document.getElementById('tracks');
+  wrap.innerHTML = '';
+
+  TRACKS.forEach(track => {
+    const done   = track.tasks.filter(t => S.checks[t.id]).length;
+    const total  = track.tasks.length;
+    const allDone = done === total;
+
+    const card = document.createElement('div');
+    card.className = 'track';
+    if (allDone) card.style.borderColor = hex(track.accent, '44');
+
+    /* Track header */
+    const hdr = el('div', 'track-hdr');
+    hdr.style.background  = allDone ? track.dark : '#161616';
+    hdr.style.borderColor = allDone ? hex(track.accent, '44') : '#1E1E1E';
+
+    const info = el('div');
+    const name = el('div', 'track-name');
+    name.textContent = track.label;
+    name.style.color = allDone ? track.accent : '#E8E6E0';
+    const sub = el('div', 'track-sub');
+    sub.textContent = track.sub;
+    info.append(name, sub);
+
+    const pill = el('div', 'track-pill');
+    pill.textContent = done + '/' + total + (allDone ? ' ✓' : '');
+    if (allDone) {
+      pill.style.background   = hex(track.accent, '22');
+      pill.style.color        = track.accent;
+      pill.style.borderColor  = hex(track.accent, '44');
+    }
+
+    hdr.append(info, pill);
+    card.appendChild(hdr);
+
+    /* Tasks */
+    track.tasks.forEach(task => {
+      const isDone  = !!S.checks[task.id];
+      const isOpen  = !!S.open[task.id];
+      const filled  = task.inputs.filter(i => (S.inputs[i.id]||'').trim()).length;
+
+      const taskDiv = el('div', 'task');
+      if (isDone) taskDiv.style.background = '#111';
+
+      /* Row */
+      const row = el('div', 'task-row');
+      row.onclick = (e) => {
+        if (e.target.closest('.chk')) return;
+        S.open[task.id] = !S.open[task.id];
+        render();
+      };
+
+      /* Checkbox */
+      const chk = el('div', 'chk');
+      if (isDone) {
+        chk.style.borderColor = track.accent;
+        chk.style.background  = track.accent;
+      }
+      const mark = el('span', 'chk-mark');
+      mark.textContent = '✓';
+      if (isDone) mark.style.display = 'block';
+      chk.appendChild(mark);
+      chk.onclick = (e) => {
+        e.stopPropagation();
+        S.checks[task.id] = !S.checks[task.id];
+        save();
+        render();
+      };
+
+      const lbl = el('span', 'task-lbl');
+      lbl.textContent = task.label;
+      if (isDone) { lbl.style.color = '#444'; lbl.style.textDecoration = 'line-through'; }
+
+      const meta = el('div', 'task-meta');
+      if (task.inputs.length) {
+        const ip = el('span', 'inp-pill');
+        ip.textContent = filled + '/' + task.inputs.length + ' fields';
+        if (filled === task.inputs.length) {
+          ip.style.background   = hex(track.accent, '22');
+          ip.style.color        = track.accent;
+          ip.style.borderColor  = hex(track.accent, '44');
+        }
+        meta.appendChild(ip);
+      }
+      const chev = el('span', 'chev');
+      chev.textContent = '▾';
+      chev.style.transform = isOpen ? 'rotate(180deg)' : 'none';
+      meta.appendChild(chev);
+
+      row.append(chk, lbl, meta);
+      taskDiv.appendChild(row);
+
+      /* Body */
+      if (isOpen) {
+        const body = el('div', 'task-body');
+        body.style.display = 'block';
+
+        const sl = el('p', 'steps-lbl');
+        sl.textContent = 'Steps';
+        const ol = el('ol', 'steps-ol');
+        task.steps.forEach(s => { const li = el('li'); li.textContent = s; ol.appendChild(li); });
+        body.append(sl, ol);
+
+        task.inputs.forEach(inp => {
+          const fw = el('div', 'field-wrap');
+          const fl = el('div', 'field-lbl');
+          const ft = document.createTextNode(inp.label);
+          fl.appendChild(ft);
+          if (inp.sens) {
+            const st = el('span', 'sens-tag');
+            st.textContent = 'sensitive';
+            fl.appendChild(st);
+          }
+          const fr = el('div', 'field-row');
+          const fi = el('input', 'field-inp');
+          fi.type        = inp.sens && !S.vis[inp.id] ? 'password' : 'text';
+          fi.placeholder = inp.ph;
+          fi.value       = S.inputs[inp.id] || '';
+          fi.oninput     = () => { S.inputs[inp.id] = fi.value; save(); updateProg(); };
+          fr.appendChild(fi);
+          if (inp.sens) {
+            const tog = el('button', 'field-tog');
+            tog.textContent = S.vis[inp.id] ? 'hide' : 'show';
+            tog.onclick = () => { S.vis[inp.id] = !S.vis[inp.id]; render(); };
+            fr.appendChild(tog);
+          }
+          fw.append(fl, fr);
+          body.appendChild(fw);
+        });
+
+        taskDiv.appendChild(body);
+      }
+
+      card.appendChild(taskDiv);
+    });
+
+    wrap.appendChild(card);
+  });
+
+  document.getElementById('notes').value = S.inputs['__notes__'] || '';
+  updateProg();
+}
+
+/* ── Generate ───────────────────────────────────────────────── */
+function generate() {
+  const done  = ALL_TASKS.filter(t => S.checks[t.id]).length;
+  const pct   = Math.round(done / TOTAL * 100);
+  const ts    = new Date().toLocaleString('en-US', { dateStyle:'medium', timeStyle:'short' });
+  const sep   = '═'.repeat(52);
+  const lines = [
+    'NORTHGATE HQ — PHASE 0 HANDOFF DOCUMENT',
+    'Generated : ' + ts,
+    'Progress  : ' + done + '/' + TOTAL + ' tasks complete (' + pct + '%)',
+    '',
+    'Upload this file at the start of a new Claude session',
+    'to begin Phase 1 without re-explanation.',
+    sep, '',
+  ];
+
+  TRACKS.forEach(track => {
+    lines.push('[ ' + track.label.toUpperCase() + ' ]');
+    track.tasks.forEach(task => {
+      task.inputs.forEach(inp => {
+        const v = (S.inputs[inp.id]||'').trim();
+        if (v) lines.push(inp.label + ': ' + v);
+      });
+    });
+    const trackDone = track.tasks.filter(t => S.checks[t.id]).length;
+    const incomplete = track.tasks.filter(t => !S.checks[t.id]).map(t => '  - ' + t.label);
+    lines.push('Status: ' + (incomplete.length === 0 ? 'All tasks complete ✓' : trackDone + '/' + track.tasks.length + ' complete'));
+    if (incomplete.length) lines.push('Incomplete:\n' + incomplete.join('\n'));
+    lines.push('');
+  });
+
+  const notes = (S.inputs['__notes__']||'').trim();
+  if (notes) { lines.push('[ NOTES ]'); lines.push(notes); lines.push(''); }
+  lines.push(sep);
+  lines.push('End of Phase 0 Handoff Document');
+
+  summaryText = lines.join('\n');
+  document.getElementById('out-pre').textContent = summaryText;
+  const oc = document.getElementById('out-card');
+  oc.style.display = 'block';
+  setTimeout(() => oc.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function doCopy() {
+  navigator.clipboard.writeText(summaryText).then(() => {
+    const b = document.getElementById('btn-cp');
+    b.textContent = 'copied ✓'; b.style.color = '#3ECF8E'; b.style.borderColor = '#3ECF8E55'; b.style.background = '#3ECF8E11';
+    setTimeout(() => { b.textContent = 'copy'; b.style.color=''; b.style.borderColor=''; b.style.background=''; }, 2000);
+  }).catch(()=>{});
+}
+
+function doDownload() {
+  const b = new Blob([summaryText], { type:'text/plain' });
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u; a.download = 'northgate_hq_phase0_handoff.txt'; a.click();
+  URL.revokeObjectURL(u);
+}
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+function hex(color, alpha) {
+  return color + alpha;
+}
+
+/* ── Notes listener ─────────────────────────────────────────── */
+document.getElementById('notes').addEventListener('input', function() {
+  S.inputs['__notes__'] = this.value;
+  save();
+});
+
+/* ── Init ───────────────────────────────────────────────────── */
+load();
+render();
+</script>
+</body>
+</html>
